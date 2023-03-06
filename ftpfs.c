@@ -249,15 +249,6 @@ char* replace(
 	}
 }
 
-char* urlencode(char const * const original){
-	//Always process % first
-	char* tmp_percent = replace(original, "%", "%25");
-	char* tmpsharp = replace(tmp_percent, "#", "%23");
-	free(tmp_percent);
-	char* tmpspace = replace(tmpsharp, " ", "%20");
-	free(tmpsharp);
-	return(tmpspace);
-}
 
 static int op_return(int err, char * operation)
 {
@@ -305,15 +296,51 @@ static size_t read_data(void *ptr, size_t size, size_t nmemb, void *data) {
     }\
   }while(0)
 
+
+char* urlencode(char const * const original){
+      char * clone = strdup( original );
+      size_t result_len = strlen(clone) + 256;
+      char * result = calloc(result_len,1);
+      char * token = strtok( clone, "/" );
+
+      if ( clone[0] == '/' ) {
+        strcat( result, "/" );
+      }
+      
+      while ( token ) {
+
+        char * encoded_token = curl_easy_escape( ftpfs.connection, token, 0 );
+
+        if ( result_len > (strlen(encoded_token) + strlen(result) + 2) )  {
+          result = realloc( result, result_len * 2 );
+          result_len *= 2;
+        }
+
+        strcat( result, encoded_token );
+
+        curl_free( encoded_token );
+
+        token = strtok( NULL, "/" );
+        if ( token ) {
+          strcat( result, "/" );
+        }
+
+      }
+      free( clone );
+      return result;
+}
+
+
 static int ftpfs_getdir(const char* path_tmp, fuse_cache_dirh_t h,
                         fuse_cache_dirfil_t filler) {
 
   char * const path = urlencode(path_tmp);
+
   int err = 0;
   CURLcode curl_res;
   char* dir_path = get_fulldir_path(path);
 
-  DEBUG(1, "ftpfs_getdir: %s\n", dir_path);
+  DEBUG(1, "ftpfs_getdir: dir_path = %s\n", dir_path);
   struct buffer buf;
   buf_init(&buf);
 
@@ -335,7 +362,6 @@ static int ftpfs_getdir(const char* path_tmp, fuse_cache_dirh_t h,
 
   free(dir_path);
   buf_free(&buf);
-  free(path);
   return op_return(err, "ftpfs_getdir");
 }
 
@@ -343,9 +369,9 @@ static int ftpfs_getattr(const char* path_tmp, struct stat* sbuf) {
   char * const path = urlencode(path_tmp);
   int err;
   CURLcode curl_res;
+
   char* dir_path = get_dir_path(path);
 
-  DEBUG(2, "ftpfs_getattr: %s dir_path=%s\n", path, dir_path);
   struct buffer buf;
   buf_init(&buf);
 
