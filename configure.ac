@@ -11,7 +11,7 @@ AC_PROG_LIBTOOL
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 
 PKG_CHECK_MODULES(GLIB, [glib-2.0])
-PKG_CHECK_MODULES(BSD, [libbsd >= 0.11])
+PKG_CHECK_MODULES(BSD, [libbsd >= 0.2])
 PKG_CHECK_MODULES(FUSE, [fuse >= 2.2])
 
 LIBCURL_CHECK_CONFIG([yes], [7.17.0], [], [AC_MSG_ERROR(["libcurl not found"])])
